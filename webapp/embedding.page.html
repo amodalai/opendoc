@@ -1552,9 +1552,11 @@ brand.json was refused:
             inside a framework.
           </li>
           <li>
-            <b data-i18n="site.embedding.prereleasesOnly">Pre-releases only.</b> One manually dispatched workflow,
+            <b data-i18n="site.embedding.prereleasesOnly">Pre-releases only.</b> For the upstream @casualoffice packages, one manually dispatched workflow,
             <code>npm-publish.yml</code>, publishes a pre-release version under npm's <code>next</code> tag and
             never under <code>latest</code>. Pin an exact version, install the tarball, or vendor the files.
+            The Amodal fork separately publishes @amodalai/opendoc through
+            <code>release-amodal-npm.yml</code>; that package does not change this upstream release policy.
           </li>
           <li>
             <b data-i18n="site.embedding.rustFacadeDeclaresContract">The Rust facade declares this contract; it does not run the

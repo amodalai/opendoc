@@ -550,6 +550,14 @@ test("everything under 'does not do yet' is still not done", () => {
   const workflows = join(REPO, ".github", "workflows");
   for (const file of readdirSync(workflows)) {
     if (file === "npm-publish.yml") continue;
+    if (file === "release-amodal-npm.yml") {
+      const forkWorkflow = read(join(workflows, file));
+      assert.ok(page.includes("release-amodal-npm.yml") && page.includes("@amodalai/opendoc"));
+      assert.ok(forkWorkflow.includes("scope: '@amodalai'"));
+      assert.ok(forkWorkflow.includes("working-directory: packages/amodal-embed"));
+      assert.ok(!forkWorkflow.includes("working-directory: packages/opendoc-embed"));
+      continue;
+    }
     assert.ok(
       !/npm publish|npm_publish|NODE_AUTH_TOKEN/.test(read(join(workflows, file))),
       `${file} now publishes something; the page says only npm-publish.yml does`,

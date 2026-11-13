@@ -74,6 +74,8 @@ function* filesUnder(dir) {
   for (const name of readdirSync(dir).sort()) {
     if (SKIP.has(name)) continue;
     const path = join(dir, name);
+    // Generated Amodal copies are verified in its packed-package test.
+    if (path === join(REPO, "packages/amodal-embed/dist")) continue;
     let info;
     try {
       info = statSync(path);
@@ -101,6 +103,8 @@ function thirdPartyLicenceFiles() {
     // The headless SDK package ships the repository's own licence and notice.
     "packages/opendoc/LICENSE",
     "packages/opendoc/NOTICE",
+    "packages/amodal-embed/LICENSE",
+    "packages/amodal-embed/NOTICE",
   ]);
   const found = [];
   for (const path of filesUnder(REPO)) {
@@ -298,4 +302,9 @@ test("the SPDX sweep covers every crate in the workspace, not a subset", () => {
     (member) => !covered.has(`${member}/src/lib.rs`) && !covered.has(`${member}/src/main.rs`),
   );
   assert.deepEqual(uncovered, [], "these workspace members have no root in the SPDX sweep");
+});
+
+test("the Amodal package retains the exact repository license and notice", () => {
+  for (const name of ["LICENSE", "NOTICE"])
+    assert.equal(readFileSync(join(REPO, "packages/amodal-embed", name), "utf8"), readFileSync(join(REPO, name), "utf8"));
 });

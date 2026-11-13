@@ -1,18 +1,44 @@
 {
   "name": "@amodalai/opendoc",
-  "version": "0.1.0-prototype.0",
-  "private": true,
+  "version": "0.1.0",
   "type": "module",
   "license": "Apache-2.0",
   "exports": {
-    ".": "./dist/native-editor.js"
+    ".": {
+      "types": "./index.d.mts",
+      "import": "./index.mjs"
+    },
+    "./editor": "./dist/native-editor.js",
+    "./package.json": "./package.json"
   },
   "scripts": {
     "build": "node build.mjs",
-    "test": "npm run build && node --test scope.test.mjs"
+    "test": "npm run build && node --test scope.test.mjs",
+    "test:package": "node --test package.test.mjs"
   },
   "devDependencies": {
     "esbuild": "0.25.5",
     "jsdom": "^26.1.0"
-  }
+  },
+  "description": "Amodal-maintained native OpenDoc editor and matching document engine assets.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/amodalai/opendoc.git",
+    "directory": "packages/amodal-embed"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "files": [
+    "dist/",
+    "index.mjs",
+    "index.d.mts",
+    "README.md",
+    "LICENSE",
+    "NOTICE"
+  ]
 }

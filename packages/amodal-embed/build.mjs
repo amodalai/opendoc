@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-import { readFile, mkdir, cp, writeFile } from "node:fs/promises";
+import { readFile, mkdir, cp, writeFile, rm, access } from "node:fs/promises";
 import { createRequire } from "node:module";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -9,6 +9,7 @@ const web = path.join(repo, "webapp");
 const dist = path.join(here, "dist");
 const require = createRequire(import.meta.url);
 const { build } = require("esbuild");
+await rm(dist, { recursive: true, force: true });
 await mkdir(dist, { recursive: true });
 for (const directory of [
   "src",
@@ -21,8 +22,26 @@ for (const directory of [
   await cp(path.join(web, directory), path.join(dist, directory), {
     recursive: true,
   });
-for (const name of ["LICENSE", "NOTICE"])
+// Development may reuse an older engine while checking DOCX integration. Releases
+// must include the lazy PDF reader used by pdf_module.mjs and ocr_worker.js.
+const pdf = path.join(web, "pkg-pdf");
+try {
+  await access(path.join(pdf, "casual_doc_wasm_pdf_bg.wasm"));
+  await cp(pdf, path.join(dist, "pkg-pdf"), { recursive: true });
+  await rm(path.join(dist, "pkg-pdf/.gitignore"), { force: true });
+} catch (error) {
+  if (error.code !== "ENOENT" || process.env.OPENDOC_ALLOW_MISSING_PDF !== "1") throw error;
+  console.warn("Development build: PDF reader is unavailable; do not publish this package.");
+}
+// npm otherwise honors wasm-pack's nested ignore file and drops the engine.
+await rm(path.join(dist, "pkg/.gitignore"), { force: true });
+for (const name of ["LICENSE", "NOTICE"]) {
   await cp(path.join(repo, name), path.join(dist, name));
+  await cp(path.join(repo, name), path.join(here, name));
+}
+// The engine embeds these fonts and the standard shape definitions; ship their full terms.
+await cp(path.join(repo, "crates/casual-doc-layout/fonts/LICENSES"), path.join(dist, "licenses/engine-fonts"), { recursive: true });
+await cp(path.join(repo, "crates/casual-doc-model/data/LICENSE-ECMA-376.txt"), path.join(dist, "licenses/LICENSE-ECMA-376.txt"));
 const html = await readFile(path.join(web, "editor.html"), "utf8");
 const markup = html
   .match(/<body[^>]*>([\s\S]*?)<\/body>/i)[1]

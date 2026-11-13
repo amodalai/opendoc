@@ -1,0 +1,78 @@
+# Amodal's package contains the directly embedded editor and matching WASM engine.
+# Separate from the upstream @casualoffice release workflow.
+name: release-amodal-npm
+
+on:
+  push:
+    tags: ['amodal-npm-v*']
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: Build and test without publishing
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-amodal-npm
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    environment: release
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '22'
+          registry-url: https://registry.npmjs.org
+          scope: '@amodalai'
+      - name: Verify the package and tag
+        run: |
+          set -euo pipefail
+          test "$(node -p 'require("./packages/amodal-embed/package.json").name')" = '@amodalai/opendoc'
+          if [[ "$GITHUB_EVENT_NAME" == push ]]; then
+            test "$GITHUB_REF_NAME" = "amodal-npm-v$(node -p 'require("./packages/amodal-embed/package.json").version')"
+          fi
+      - name: Set up the pinned Rust toolchain
+        run: rustup show
+      - uses: Swatinem/rust-cache@c8037a86dde8214a8310e9f54a8fc61ab362aa31 # v2
+      - uses: taiki-e/install-action@a4d3f3f761dcd95cce1b72cb61cb6d1963438177
+        with:
+          tool: wasm-pack@0.15.0
+          fallback: none
+      - name: Install binaryen
+        uses: ./.github/actions/install-binaryen
+      - name: Build the matching document engine
+        env:
+          CARGO_PROFILE_RELEASE_OPT_LEVEL: z
+        run: |
+          set -euo pipefail
+          wasm-pack build crates/casual-doc-wasm --target web --out-dir ../../webapp/pkg --out-name casual_doc_wasm -- --features web-host-fonts
+          RUSTFLAGS="${RUSTFLAGS:+$RUSTFLAGS }-C target-feature=+simd128" wasm-pack build crates/casual-doc-wasm-pdf --target web --out-dir ../../webapp/pkg-pdf --out-name casual_doc_wasm_pdf
+          git rev-parse HEAD > webapp/pkg/source-commit.txt
+          echo "engine sha256: $(sha256sum webapp/pkg/casual_doc_wasm_bg.wasm | cut -d' ' -f1)" >> "$GITHUB_STEP_SUMMARY"
+      - name: Install package build tools
+        working-directory: packages/amodal-embed
+        run: npm ci --no-audit --no-fund
+      - name: Build and verify the package
+        working-directory: packages/amodal-embed
+        run: |
+          npm run build
+          node --test scope.test.mjs package.test.mjs
+          npm pack --dry-run
+      - name: Publish to npm
+        if: github.event_name == 'push' || inputs.dry_run == false
+        working-directory: packages/amodal-embed
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: npm publish --access public --provenance
