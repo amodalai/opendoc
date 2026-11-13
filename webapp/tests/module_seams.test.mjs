@@ -930,16 +930,14 @@ function readCount(body, name) {
 
 test("main.js keeps no module-level binding nothing reads", () => {
   const source = read("main.js");
-  // The two premises this guard stands on. Without them "nothing in this file
-  // reads it" would not imply "nothing reads it", and the guard would be an
-  // argument for deleting working code.
-  assert.equal(
-    /^\s*export[\s{]/m.test(blankLiterals(source)),
-    false,
-    "main.js has grown an export, so a binding may now be read from outside it and " +
-      "this guard's premise no longer holds. Either take the export out or scope this " +
-      "guard to what is still private.",
+  // The direct host seam is the sole public binding. All other bindings still
+  // need a local reader; keep an explicit export list so this guard cannot
+  // silently stop checking newly exported internals.
+  assert.deepEqual(
+    [...blankLiterals(source).matchAll(/^export function (\w+)/gm)].map(m => m[1]),
+    ["nativeEditorController"],
   );
+  assert.equal(/^\s*export (?!function nativeEditorController)[\s\S]/m.test(blankLiterals(source)), false);
   const markup = readFileSync(new URL("../editor.html", SRC), "utf8");
   assert.deepEqual(
     [...markup.matchAll(/\son[a-z]+\s*=\s*"/g)].map((m) => m[0].trim()),
@@ -954,7 +952,7 @@ test("main.js keeps no module-level binding nothing reads", () => {
   // must survive, which is what the lookbehind protects.
   const body = blanked.replace(/(?<![.])(\?\.|\.)\s*([A-Za-z_$][\w$]*)/g, ".");
   const dead = topLevelBindings(blanked)
-    .filter((binding) => readCount(body, binding.name) === 0)
+    .filter((binding) => binding.name !== "nativeEditorController" && readCount(body, binding.name) === 0)
     .map((binding) => `main.js:${binding.line} ${binding.name}`);
   assert.deepEqual(
     dead,

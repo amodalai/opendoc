@@ -530,6 +530,7 @@ export function createFileOpen(ed) {
         document.body.dataset.fontsReady = "true";
       });
     } catch (err) {
+      if (options.throwOnError) throw err;
       // An admission refusal ("this document is too large for the browser") is an
       // expected answer, not a fault: logging it as a console error made a handled
       // case look like a crash, and every spec that asserts a clean console would
@@ -574,6 +575,8 @@ export function createFileOpen(ed) {
       // revision observes it — but the draft's name is now stale, and a recovery
       // bar naming the old file is a recovery bar the user does not recognise.
       ed.noteDraftDirty();
+      // Renaming changes the saved artifact even though the model revision is unchanged.
+      ed.hostSession?.noteChange();
     }
   }
 

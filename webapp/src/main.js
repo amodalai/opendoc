@@ -23,8 +23,7 @@ import { applyPreviewInk } from "./style_preview.mjs";
 import { createCompatibilityFindings } from "./compat_findings.mjs";
 import { INSERT_REASON_KEYS, listNumberingStates, reflectEnablement } from "./control_reasons.mjs";
 import { attachHostBridge } from "./host_bridge.mjs";
-import { createHostSession } from "./host_session.mjs";
-import { createAssistant } from "./ai_assistant.mjs";
+import { createEditorHost, createNativeEditorController } from "./editor_host.mjs";
 import {
   buildPageBand,
   pageBandPitch,
@@ -1039,6 +1038,7 @@ const tabTable = document.getElementById("tabTable");
 // `selectRibbonTab` reaches for it, and a `const` in the temporal dead zone
 // would throw on the first tab switch of the boot sweep.
 const filePageBody = document.getElementById("filePageBody");
+const propertiesBtn = document.getElementById("propertiesBtn");
 const undoBtn = document.getElementById("undoBtn");
 const redoBtn = document.getElementById("redoBtn");
 const viewOutlineBtn = document.getElementById("viewOutlineBtn");
@@ -2973,7 +2973,7 @@ if (openBtn) openBtn.disabled = true;
 // (Not "no selection yet": once a document opens it always has an insertion
 // point — see `openBytes` — so `selection` tracks the document, not the click.)
 updateToolbar();
-boot();
+const editorReady = boot();
 
 createChromeModes(ed);
 startDockManager(ed);
@@ -2982,15 +2982,8 @@ startDockManager(ed);
 // behind `postMessage`, so the two can never answer differently. Commands, events, refusals
 // and gating come from `host_contract.mjs`; the registry is the PALETTE's, so the API reaches
 // what a person can, and the gate runs before dispatch. `ai` is `editor.ai` (`docs/181` §4.4).
-hostSession = createHostSession({
-  capabilities: HOST_CAPS,
-  registry: () => editorCommands({ surface: "palette" }),
-  withheldMessage: () => t("capability.notGranted"),
-  revision: () => (revisionUnreadable ? null : currentRevision),
-  dirty: () => documentIsDirty(),
-  selection: () => (selection ? { anchor: { ...selection.anchor }, focus: { ...selection.focus }, hasRange: hasRange() } : null),
-  document: () => ({ name: currentName, format: currentSourceFormat }),
-  ai: createAssistant(ed, { onDecision: (detail) => hostSession?.noteAiDecision(detail) }),
-});
+hostSession = createEditorHost(ed);
 window.opendoc = hostSession;
 attachHostBridge({ session: hostSession, view: window });
+
+export function nativeEditorController() { return createNativeEditorController(ed, editorReady); }

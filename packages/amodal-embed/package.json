@@ -1,0 +1,18 @@
+{
+  "name": "@amodalai/opendoc",
+  "version": "0.1.0-prototype.0",
+  "private": true,
+  "type": "module",
+  "license": "Apache-2.0",
+  "exports": {
+    ".": "./dist/native-editor.js"
+  },
+  "scripts": {
+    "build": "node build.mjs",
+    "test": "npm run build && node --test scope.test.mjs"
+  },
+  "devDependencies": {
+    "esbuild": "0.25.5",
+    "jsdom": "^26.1.0"
+  }
+}

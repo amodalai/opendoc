@@ -714,3 +714,9 @@ HF-127; both now closed), OO-002 (adds templates and the backstage IA to HF-016/
 duplex, colour and preview to HF-030/HF-036/HF-105), OO-016 (adds three AutoCorrect tabs to
 HF-055), OO-006 (adds authoring UI to FID-L-02/FID-L-10), OO-014 (adds authoring to
 FID-R-08/FID-L-04), and HF-160 (the RTF slice of RM-06).
+
+## Amodal fork integration
+
+| ID | Work | State |
+| --- | --- | --- |
+| AMODAL-001 | Direct Shadow DOM editor mount, per-instance lifecycle, host-owned DOCX save and Amodal artifact prototype. See `packages/amodal-embed/README.md`. | Prototype verified: create/edit/autosave/agent follow-up/reopen/DOCX download and re-import in UI; scope isolation and cleanup tests pass. Cloud deployment and broad fidelity coverage remain separate work. |
