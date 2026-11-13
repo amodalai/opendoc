@@ -719,4 +719,5 @@ FID-R-08/FID-L-04), and HF-160 (the RTF slice of RM-06).
 
 | ID | Work | State |
 | --- | --- | --- |
+| AMODAL-002 | Refit the directly embedded editor on host-container resize; isolate notifications and release the observer on destroy. | Implemented with scope lifecycle coverage; supports draggable artifact panes. |
 | AMODAL-001 | Direct Shadow DOM editor mount, per-instance lifecycle, host-owned DOCX save and Amodal artifact prototype. See `packages/amodal-embed/README.md`. | Prototype verified: create/edit/autosave/agent follow-up/reopen/DOCX download and re-import in UI; scope isolation and cleanup tests pass. Cloud deployment and broad fidelity coverage remain separate work. |

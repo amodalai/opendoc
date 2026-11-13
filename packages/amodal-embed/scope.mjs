@@ -65,6 +65,7 @@ export function createScope(host, options, markup) {
     }),
   );
   const listeners = new Map();
+  const resizeListeners = new Set();
   function listen(target, type, callback, settings) {
     if (disposed) return;
     const handler = (event) => {
@@ -73,7 +74,11 @@ export function createScope(host, options, markup) {
       else callback.handleEvent(event);
     };
     target.addEventListener(type, handler, settings);
-    const remove = () => target.removeEventListener(type, handler, settings);
+    if (type === "resize") resizeListeners.add(handler);
+    const remove = () => {
+      target.removeEventListener(type, handler, settings);
+      resizeListeners.delete(handler);
+    };
     cleanups.add(remove);
     const key = callback;
     const records = listeners.get(key) ?? [];
@@ -295,6 +300,14 @@ export function createScope(host, options, markup) {
     },
   };
   Object.assign(ownGlobals, globals);
+  // A split pane changes size without resizing the browser window. Notify only
+  // this editor so fit-to-width and responsive chrome follow its host bounds.
+  const hostResize = new view.ResizeObserver(() => {
+    if (disposed) return;
+    for (const handler of resizeListeners) handler(new view.Event("resize"));
+  });
+  hostResize.observe(host);
+  cleanups.add(() => hostResize.disconnect());
   function destroy() {
     if (disposed) return;
     disposed = true;

@@ -31,8 +31,15 @@ test("two mounts isolate IDs, globals and shortcuts, and release their resources
       this.terminated = true;
     }
   };
+  const observers = [];
   view.ResizeObserver = view.MutationObserver = class {
-    observe() {}
+    constructor(callback) {
+      this.callback = callback;
+      observers.push(this);
+    }
+    observe(target) {
+      this.target = target;
+    }
     disconnect() {
       this.disconnected = true;
     }
@@ -87,6 +94,17 @@ test("two mounts isolate IDs, globals and shortcuts, and release their resources
     }),
   );
   assert.deepEqual([keysA, keysB, hostKeys], [1, 0, 0]);
+  let resizedA = 0,
+    resizedB = 0;
+  const onResize = () => resizedA++;
+  a.globals.window.addEventListener("resize", onResize);
+  b.globals.window.addEventListener("resize", () => resizedB++);
+  const hostResize = observers.find((item) => item.target?.id === "host-a");
+  hostResize.callback();
+  assert.deepEqual([resizedA, resizedB], [1, 0]);
+  a.globals.window.removeEventListener("resize", onResize);
+  hostResize.callback();
+  assert.equal(resizedA, 1);
   await assert.rejects(
     a.globals.fetch("https://third-party.test/font"),
     /External/,
@@ -109,6 +127,7 @@ test("two mounts isolate IDs, globals and shortcuts, and release their resources
   assert.equal(ticked, false);
   assert.equal(worker.terminated, true);
   assert.equal(observer.disconnected, true);
+  assert.equal(hostResize.disconnected, true);
   assert.equal(fonts.size, 3);
   assert.equal(
     view.document.getElementById("host-a").shadowRoot.childElementCount,

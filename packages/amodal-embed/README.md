@@ -7,6 +7,7 @@ Serve `dist/` from the host origin; import `native-editor.js` and call
 
 Each mount evaluates a separate bundled editor graph so module-level state, DOM queries,
 listeners and timers belong to that instance. `destroy()` releases them and the WASM document.
+Host size changes notify only that instance's resize listeners, keeping fit-to-width and editor controls responsive when a surrounding split pane is dragged.
 The host owns persistence and must flush before locking, changing documents or unmounting.
 `exportDocx()` returns bytes and a compatibility report; it does not silently claim a save.
 The prototype disables upstream analytics, add-ins, collaboration, local drafts and remote
